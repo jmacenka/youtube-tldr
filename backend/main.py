@@ -150,11 +150,11 @@ def video_summary(
         prompt = (
             f"Please provide a summary for the following YouTube video transcript:\n\n{concatenated_transcript}\n\n"
             "The summary should be structured as follows:\n"
-            "1. A concise 2-sentence summary of the video's main points.\n"
+            "1. A concise 4-sentence summary of the video's main points.\n"
             "2. A list of the main insights or takeaways presented in the video.\n"
             "3. An overall sentiment rating of the video's tone towards the main topic, expressed as Positive, Neutral, or Negative.\n"
             f"4. The summary shall be in this language as identified by its short-code: {language}.\n"
-            f"6. Format your answer in Markdown Syntax.\n"
+            #f"6. Format your answer in Markdown Syntax.\n"
         )
 
         # Generate the summary

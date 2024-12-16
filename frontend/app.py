@@ -5,7 +5,15 @@ import requests
 import re
 
 # Initialize the Dash app with Bootstrap theme for better styling
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+app = dash.Dash(
+    __name__, 
+    external_stylesheets=[dbc.themes.BOOTSTRAP],
+    title="YT-TL;DR",
+    meta_tags=[
+        {"name": "viewport", "content": "width=device-width, initial-scale=1.0"},
+        {"name": "description", "content": "YouTube TL;DR - Summarize videos quickly!"}
+        ]
+    )
 server = app.server  # Expose the server variable for deployments
 
 # Backend API URL (service name defined in docker-compose)
@@ -57,7 +65,7 @@ app.layout = dbc.Container([
                 placeholder="Enter YouTube URL or Video ID",
                 type="text",
             ),
-            dbc.Button("Submit", id="submit-button", color="primary", className="mt-2"),
+            dbc.Button("Search for Video", id="submit-button", color="primary", className="mt-2"),
             html.Div(id="error-message", className="text-danger mt-2"),
             html.Hr(),
             html.Div(id="video-metadata", className="mt-2"),
@@ -73,7 +81,6 @@ app.layout = dbc.Container([
                     ),
                 ], width=12),
             ], className="mt-2"),
-            dbc.Button("Get Transcript", id="get-transcript-button", color="info", className="mt-2", disabled=True),
             dbc.Button("Generate Summary", id="generate-summary-button", color="success", className="mt-2 ml-2", disabled=True),
             html.Hr(),
             dcc.Loading(
@@ -123,7 +130,6 @@ def extract_video_id(input_str):
         Output("video-metadata", "children"),
         Output("language-dropdown", "options"),
         Output("language-dropdown", "value"),
-        Output("get-transcript-button", "disabled"),
         Output("generate-summary-button", "disabled"),
     ],
     [Input("submit-button", "n_clicks")],
@@ -131,11 +137,11 @@ def extract_video_id(input_str):
 )
 def fetch_video_metadata(n_clicks, input_value):
     if not n_clicks:
-        return "", "", [], None, True, True
+        return "", "", [], None, True
 
     video_id = extract_video_id(input_value)
     if not video_id:
-        return "Invalid YouTube URL or Video ID.", "", [], None, True, True
+        return "Invalid YouTube URL or Video ID.", "", [], None, True
 
     try:
         response = requests.get(f"{BACKEND_API_URL}/video_metadata/{video_id}")
@@ -158,13 +164,13 @@ def fetch_video_metadata(n_clicks, input_value):
             # Default to first language if not previously selected
             default_language = languages[0]["code"] if languages else None
     
-            return "", metadata_div, language_options, default_language, False, False
+            return "", metadata_div, language_options, default_language, False
         elif response.status_code == 404:
-            return "Video not found.", "", [], None, True, True
+            return "Video not found.", "", [], None, True
         else:
-            return f"Error fetching metadata: {response.json().get('detail', 'Unknown error')}", "", [], None, True, True
+            return f"Error fetching metadata: {response.json().get('detail', 'Unknown error')}", "", [], None, True
     except Exception as e:
-        return f"Error connecting to backend: {e}", "", [], None, True, True
+        return f"Error connecting to backend: {e}", "", [], None, True
 
 
 @app.callback(
@@ -214,7 +220,6 @@ def check_ollama_connection(n_clicks, ollama_api_url):
 @app.callback(
     Output("shared-results", "children"),  # Changed to update the children of shared-results
     [
-        Input("get-transcript-button", "n_clicks"),
         Input("generate-summary-button", "n_clicks"),
     ],
     [
@@ -223,11 +228,11 @@ def check_ollama_connection(n_clicks, ollama_api_url):
         State("ollama-api-url-store", "data"),
     ]
 )
-def update_output(transcript_click, summary_click, input_value, language, ollama_api_url):
+def update_output(summary_click, input_value, language, ollama_api_url):
     ctx = callback_context
 
     if not ctx.triggered:
-        return dcc.Markdown(
+        return html.Pre(
             "No results yet.",
             style={"whiteSpace": "pre-wrap"},
         )
@@ -236,36 +241,12 @@ def update_output(transcript_click, summary_click, input_value, language, ollama
 
     video_id = extract_video_id(input_value)
     if not video_id:
-        return dcc.Markdown(
+        return html.Pre(
             "**Error:** Invalid Video ID.",
             style={"color": "red", "whiteSpace": "pre-wrap"},
         )
 
-    if triggered_id == "get-transcript-button" and transcript_click:
-        try:
-            response = requests.get(
-                f"{BACKEND_API_URL}/video_transcripts/{video_id}",
-                params={"language": language}
-            )
-            if response.status_code == 200:
-                data = response.json()
-                transcript = data.get("transcript", "No transcript available.")
-                return dcc.Markdown(
-                    transcript,
-                    style={"whiteSpace": "pre-wrap"},
-                )
-            else:
-                return html.Pre(
-                    f"**Error fetching transcript:** {response.json().get('detail', 'Unknown error')}",
-                    style={"color": "red", "whiteSpace": "pre-wrap"},
-                )
-        except Exception as e:
-            return html.Pre(
-                f"**Error connecting to backend:** {e}",
-                style={"color": "red", "whiteSpace": "pre-wrap"},
-            )
-
-    elif triggered_id == "generate-summary-button" and summary_click:
+    if triggered_id == "generate-summary-button" and summary_click:
         try:
             headers = {}
             if ollama_api_url:
