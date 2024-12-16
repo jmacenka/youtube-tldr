@@ -1,5 +1,5 @@
 import dash
-from dash import html, dcc, Input, Output, State, callback_context
+from dash import html, dcc, Input, Output, State, callback_context, no_update
 import dash_bootstrap_components as dbc
 import requests
 import re
@@ -78,21 +78,26 @@ app.layout = dbc.Container([
             html.Hr(),
             dcc.Loading(
                 id="loading-output",
-                type="default",
-                children=html.Div([
-                    dcc.Tabs(id='output-tabs', value='transcript-tab', children=[
-                        dcc.Tab(label='Transcript', value='transcript-tab'),
-                        dcc.Tab(label='Summary', value='summary-tab'),
-                    ]),
-                    html.Div(id='tab-content', className="mt-2")
-                ])
+                type="default",  # Default spinner type
+                children=html.Div(
+                    id="shared-results",
+                    className="mt-2",
+                    style={
+                        "border": "2px solid #ddd",  # Light grey border
+                        "borderRadius": "10px",     # Rounded corners
+                        "padding": "15px",          # Padding inside the box
+                        "backgroundColor": "#FFF8DC",  # Light cream background
+                        "minHeight": "100px",       # Ensure it is visible by default
+                    },
+                ),
             )
-        ], width=6)
-    ], justify="center"),
-    # Hidden store components to keep settings and selected language
-    dcc.Store(id='ollama-api-url-store', data="http://localhost:11434"),
-    dcc.Store(id='selected-language-store', data=None),
-])
+
+                    ], width=6)
+                ], justify="center"),
+                # Hidden store components to keep settings and selected language
+                dcc.Store(id='ollama-api-url-store', data="http://localhost:11434"),
+                dcc.Store(id='selected-language-store', data=None),
+            ])
 
 
 def extract_video_id(input_str):
@@ -206,31 +211,35 @@ def check_ollama_connection(n_clicks, ollama_api_url):
     except Exception as e:
         return dbc.Alert(f"Error connecting to Ollama API: {e}", color="danger")
 
-
 @app.callback(
-    Output("tab-content", "children"),
+    Output("shared-results", "children"),  # Changed to update the children of shared-results
     [
-        Input('output-tabs', 'value'),
-        Input('get-transcript-button', 'n_clicks'),
-        Input('generate-summary-button', 'n_clicks')
+        Input("get-transcript-button", "n_clicks"),
+        Input("generate-summary-button", "n_clicks"),
     ],
     [
-        State('youtube-url-input', 'value'),
-        State('selected-language-store', 'data'),
-        State('ollama-api-url-store', 'data')
+        State("youtube-url-input", "value"),
+        State("selected-language-store", "data"),
+        State("ollama-api-url-store", "data"),
     ]
 )
-def update_output(tab, transcript_click, summary_click, input_value, language, ollama_api_url):
+def update_output(transcript_click, summary_click, input_value, language, ollama_api_url):
     ctx = callback_context
 
     if not ctx.triggered:
-        return ""
+        return dcc.Markdown(
+            "No results yet.",
+            style={"whiteSpace": "pre-wrap"},
+        )
 
-    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    triggered_id = ctx.triggered[0]["prop_id"].split(".")[0]
 
     video_id = extract_video_id(input_value)
     if not video_id:
-        return dbc.Alert("Invalid Video ID.", color="danger")
+        return dcc.Markdown(
+            "**Error:** Invalid Video ID.",
+            style={"color": "red", "whiteSpace": "pre-wrap"},
+        )
 
     if triggered_id == "get-transcript-button" and transcript_click:
         try:
@@ -239,15 +248,22 @@ def update_output(tab, transcript_click, summary_click, input_value, language, o
                 params={"language": language}
             )
             if response.status_code == 200:
-                transcript = response.text
-                if tab == 'transcript-tab':
-                    return html.Pre(transcript, style={"whiteSpace": "pre-wrap", "backgroundColor": "#FFF8DC", "padding": "15px", "borderRadius": "10px"})
-                elif tab == 'summary-tab':
-                    return dash.no_update
+                data = response.json()
+                transcript = data.get("transcript", "No transcript available.")
+                return dcc.Markdown(
+                    transcript,
+                    style={"whiteSpace": "pre-wrap"},
+                )
             else:
-                return dbc.Alert(f"Error fetching transcript: {response.json().get('detail', 'Unknown error')}", color="danger")
+                return html.Pre(
+                    f"**Error fetching transcript:** {response.json().get('detail', 'Unknown error')}",
+                    style={"color": "red", "whiteSpace": "pre-wrap"},
+                )
         except Exception as e:
-            return dbc.Alert(f"Error connecting to backend: {e}", color="danger")
+            return html.Pre(
+                f"**Error connecting to backend:** {e}",
+                style={"color": "red", "whiteSpace": "pre-wrap"},
+            )
 
     elif triggered_id == "generate-summary-button" and summary_click:
         try:
@@ -257,21 +273,30 @@ def update_output(tab, transcript_click, summary_click, input_value, language, o
             response = requests.get(
                 f"{BACKEND_API_URL}/video_summary/{video_id}",
                 params={"language": language},
-                headers=headers
+                headers=headers,
             )
             if response.status_code == 200:
                 data = response.json()
                 summary = data.get("summary", "No summary available.")
-                if tab == 'summary-tab':
-                    return html.Pre(summary, style={"whiteSpace": "pre-wrap", "backgroundColor": "#FFF8DC", "padding": "15px", "borderRadius": "10px"})
-                elif tab == 'transcript-tab':
-                    return dash.no_update
+                return html.Pre(
+                    summary,
+                    style={"whiteSpace": "pre-wrap"},
+                )
             else:
-                return dbc.Alert(f"Error generating summary: {response.json().get('detail', 'Unknown error')}", color="danger")
+                return html.Pre(
+                    f"**Error generating summary:** {response.json().get('detail', 'Unknown error')}",
+                    style={"color": "red", "whiteSpace": "pre-wrap"},
+                )
         except Exception as e:
-            return dbc.Alert(f"Error connecting to backend: {e}", color="danger")
+            return html.Pre(
+                f"**Error connecting to backend:** {e}",
+                style={"color": "red", "whiteSpace": "pre-wrap"},
+            )
 
-    return ""
+    return html.Pre(
+        "No results available.",
+        style={"whiteSpace": "pre-wrap"},
+    )
 
 
 if __name__ == '__main__':
