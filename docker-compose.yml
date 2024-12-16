@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: youtube_backend
+    ports:
+      - "8000:8000"
+    network_mode: "host" # Required to work with local instance of Ollama
+
+  frontend:
+    build: ./frontend
+    container_name: youtube_frontend
+    ports:
+      - "8050:8050"
+    depends_on:
+      - backend
+    network_mode: "host" # Required to work with local instance of Ollama
+
+volumes:
+  ollama_data:
+
+networks:
+  youtube_network:
+    driver: bridge
+  open-webui_default:

@@ -1,0 +1,135 @@
+/* assets/style.css */
+
+/* Solarized Color Scheme */
+:root {
+    --base03: #002b36;
+    --base02: #073642;
+    --base01: #586e75;
+    --base00: #657b83;
+    --base0: #839496;
+    --base1: #93a1a1;
+    --base2: #eee8d5;
+    --base3: #fdf6e3;
+    --yellow: #b58900;
+    --orange: #cb4b16;
+    --red: #dc322f;
+    --magenta: #d33682;
+    --violet: #6c71c4;
+    --blue: #268bd2;
+    --cyan: #2aa198;
+    --green: #859900;
+}
+
+/* Body Background */
+body {
+    background-color: var(--base3);
+    font-family: 'Roboto', sans-serif;
+}
+
+/* Navbar */
+nav {
+    background-color: var(--base02) !important;
+}
+
+.brand-logo {
+    font-family: 'Roboto', sans-serif;
+    font-weight: bold;
+    letter-spacing: 2px;
+    color: var(--base3) !important;
+}
+
+/* Buttons */
+.btn {
+    border-radius: 25px;
+}
+
+.btn:hover {
+    opacity: 0.8;
+}
+
+/* Input Fields */
+input[type=text], input[type=url], select {
+    background-color: var(--base3);
+    border: 1px solid var(--base1);
+    border-radius: 5px;
+}
+
+input[type=text]:focus, input[type=url]:focus, select:focus {
+    border-bottom: 2px solid var(--yellow);
+    box-shadow: 0 1px 0 0 var(--yellow);
+}
+
+/* Cards */
+.card {
+    background-color: var(--base3);
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+}
+
+/* Alerts */
+.alert {
+    padding: 15px;
+    border-radius: 5px;
+    margin-top: 10px;
+}
+
+.red-text {
+    color: var(--red) !important;
+}
+
+.green-text {
+    color: var(--green) !important;
+}
+
+/* Loader Spinner */
+.spinner {
+    margin: 0 auto;
+}
+
+/* Additional Styling */
+.center-align {
+    text-align: center;
+}
+
+.mt-2 {
+    margin-top: 20px;
+}
+
+.ml-2 {
+    margin-left: 20px;
+}
+
+.white-text {
+    color: #ffffff !important;
+}
+
+.orange.darken-1 {
+    background-color: var(--orange) !important;
+}
+
+.teal.lighten-1 {
+    background-color: var(--cyan) !important;
+}
+
+.blue-grey.darken-1 {
+    background-color: var(--base02) !important;
+}
+
+.card-content {
+    padding: 20px;
+}
+
+.hoverable:hover {
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
+
+/* Custom Select Styling */
+input.select-dropdown {
+    background-color: var(--base3) !important;
+    border: 1px solid var(--base1) !important;
+    border-radius: 5px !important;
+}
+
+.dropdown-content li a:hover, .dropdown-content li a.active {
+    background-color: var(--yellow) !important;
+    color: var(--base02) !important;
+}
