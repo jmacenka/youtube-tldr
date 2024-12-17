@@ -199,11 +199,11 @@ def fetch_video_metadata(n_clicks, input_value):
             metadata_div = html.Div(metadata_items, style={"backgroundColor": "#F5DEB3", "padding": "15px", "borderRadius": "10px"})
 
             # Prepare language options
-            languages = data.get("supported_languages", [])
-            language_options = [{"label": lang["name"], "value": lang["code"]} for lang in languages]
+            languages = data.get("supported_languages")
+            language_options = [{"label": lang["name"], "value": lang["code"]} for lang in languages] if languages else ['No transcript available']
 
             # Default to first language if available
-            default_language = languages[0]["code"] if languages else None
+            default_language = languages[0]["code"] if languages else 'No transcript available'
 
             return "", metadata_div, language_options, default_language
         else:
