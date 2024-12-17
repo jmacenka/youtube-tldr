@@ -26,6 +26,7 @@ DEFAULT_PROMPT = (
     "2. A list of the main insights or takeaways presented in the video.\n"
     "3. An overall sentiment rating of the video's tone towards the main topic, expressed as Positive, Neutral, or Negative.\n"
     "4. The summary shall be in this language as identified by its short-code: [[language]].\n"
+    "5. Output the summary in Markdown syntax.\n"
 )
 
 # Layout of the Dash app
