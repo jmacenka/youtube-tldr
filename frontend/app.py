@@ -323,7 +323,7 @@ def update_output(summary_click, input_value, language, ollama_api_url, model, d
     ctx = callback_context
 
     if not ctx.triggered:
-        return html.Pre(
+        return dcc.Markdown(
             "No results yet.",
             style={"whiteSpace": "pre-wrap"},
         )
@@ -354,7 +354,7 @@ def update_output(summary_click, input_value, language, ollama_api_url, model, d
                 if data.get("error"):
                     return dbc.Alert(data["error"], color="danger")
                 summary = data.get("summary", "No summary available.")
-                return html.Pre(summary, className="mt-2")
+                return dcc.Markdown(summary, className="mt-2")
             else:
                 # Attempt to extract error detail from response
                 try:
@@ -365,7 +365,7 @@ def update_output(summary_click, input_value, language, ollama_api_url, model, d
         except Exception as e:
             return dbc.Alert(f"Error connecting to backend: {e}", color="danger")
 
-    return html.Pre(
+    return dcc.Markdown(
         "No results available.",
         style={"whiteSpace": "pre-wrap"},
     )
