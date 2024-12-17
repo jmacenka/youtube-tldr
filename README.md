@@ -15,7 +15,6 @@ The project assumes that you already have a running ollama instance with exposed
 
 ## Table of Contents
 
-- [Demo](#demo)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Configuration](#configuration)
@@ -26,7 +25,6 @@ The project assumes that you already have a running ollama instance with exposed
 - [License](#license)
 - [Contact](#contact)
 
-## Demo
 
 ## Prerequisites
 
@@ -35,6 +33,7 @@ Before setting up YT-TL;DR, ensure you have the following installed on your syst
 - Docker
 - Docker Compose
 - [Python 3.8+](https://www.python.org/downloads/) (if running without Docker)
+- [ollama instance](https://hub.docker.com/r/ollama/ollama) with some downloaded models to be used
 
 ## Installation
 
@@ -45,20 +44,11 @@ YT-TL;DR can be easily set up using Docker Compose. Follow the steps below to ge
 1. **Clone the Repository**
     
     ```bash 
-    git clone https://github.com/jmacenka/yt-tldr.git
-	cd yt-tldr 
+    git clone https://github.com/jmacenka/youtube-tldr.git
+	cd youtube-tldr 
 	```
     
-2. **Configure Environment Variables**
-    
-    Create a `.env` file in the project root to specify necessary environment variables.
-    
-    ```bash
-    # .env
-    BACKEND_PORT=8000 FRONTEND_PORT=8050 OLLAMA_API_URL=http://ollama:11434
-	```
-    
-3. **Build and Run the Services**
+2. **Build and Run the Services**
     
     ```bash 
     docker-compose up -d --build 
@@ -66,9 +56,9 @@ YT-TL;DR can be easily set up using Docker Compose. Follow the steps below to ge
     
     This command builds the Docker images and starts the backend and frontend services in detached mode.
     
-4. **Verify the Services**
+3. **Verify the Services**
     
-    - **Backend:** Accessible at `http://localhost:8000`
+    - **Backend:** Accessible at `http://localhost:8000/available_models`
     - **Frontend:** Accessible at `http://localhost:8050`
 
 ### Running Locally Without Docker
@@ -78,8 +68,8 @@ If you prefer running the application without Docker, follow these steps:
 1. **Clone the Repository**
     
     ```bash 
-    git clone https://github.com/jmacenka/yt-tldr.git
-    cd yt-tldr 
+    git clone https://github.com/jmacenka/youtube-tldr.git
+    cd youtube-tldr 
     ```
     
 2. **Set Up a Virtual Environment**
@@ -105,25 +95,25 @@ If you prefer running the application without Docker, follow these steps:
     Open a new terminal window/tab, activate the virtual environment, and run:
     
     ```bash 
-    cd frontend python app.py 
+    cd frontend python3 app.py 
     ```
     
 6. **Access the Application**
     
-    - **Backend:** Accessible at `http://localhost:8000`
+    - **Backend:** Accessible at `http://localhost:8000/available_models`
     - **Frontend:** Accessible at `http://localhost:8050`
 
 ## Configuration
 
 ### Ollama API URL
 
-- **Default Value:** `http://ollama:11434`
+- **Default Value:** `http://localhost:11434`
 - **Description:** The URL where your Ollama instance is running. Update this in the settings modal of the frontend if your Ollama API is hosted elsewhere.
 
 ### Default Summary Prompt
 
 - **Location:** Settings Modal in the frontend
-- **Description:** Customize the prompt that will be sent to the language model for generating summaries. Use placeholders `{transcript}` and `{language}` to dynamically insert the video's transcript and selected language.
+- **Description:** Customize the prompt that will be sent to the language model for generating summaries. Use placeholders `[[transcript]]` and `[[language]]` to dynamically insert the video's transcript and selected language.
 
 ## Usage
 
@@ -154,7 +144,7 @@ If you prefer running the application without Docker, follow these steps:
 
 ## Project Structure
 ```
-yt-tldr/
+youtube-tldr/
 ├── backend/
 │   ├── main.py
 │   ├── requirements.txt
@@ -193,8 +183,8 @@ yt-tldr/
     
     - **Solution:** Ensure that the Ollama instance has models installed. Use the `/available_models` endpoint to verify available models.
     
-    ```bash 
-    curl http://localhost:8000/available_models
+   ```bash 
+   curl http://localhost:8000/available_models
 	```
     
 4. **Invalid YouTube Video ID**
@@ -216,8 +206,8 @@ Contributions are welcome! Please follow the steps below to contribute to YT-TL;
 2. **Clone Your Fork**
     
     ```bash 
-    git clone https://github.com/jmacenka/yt-tldr.git
-    cd yt-tldr
+    git clone https://github.com/jmacenka/youtube-tldr.git
+    cd youtube-tldr
     ```
     
 3. **Create a New Branch**
@@ -254,6 +244,6 @@ This project is licensed under the MIT License.
 
 ## Contact
 
-For any questions or suggestions, please contact [yt-tldr@macenka.de](mailto:yt-tldr@macenka.de)
+For any questions or suggestions, please contact [youtube-tldr@macenka.de](mailto:youtube-tldr@macenka.de)
 
 > Dec 2024
