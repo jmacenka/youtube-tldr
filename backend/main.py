@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Header
+from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 import ollama
 from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound, TranscriptsDisabled, CouldNotRetrieveTranscript
@@ -22,6 +22,26 @@ class VideoTranscriptResponse(BaseModel):
     transcript: Optional[str] = None
     error: Optional[str] = None
 
+@app.get("/available_models", response_model=List[str])
+def list_available_models(
+    ollama_api_url: Optional[str] = Header(None, alias="X-Ollama-API-URL")
+):
+    """
+    Lists available models from Ollama using the ollama library.
+    """
+    if not ollama_api_url:
+        ollama_api_url = "http://localhost:11434"  # Default Ollama URL
+
+    try:
+        # Initialize the Ollama client
+        models = [item.get('model') for item in ollama.list().get('models','')]
+        if not models:
+            raise HTTPException(status_code=500, detail="No models found in Ollama.")
+
+        return models
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching available models: {e}")
+
 @app.get("/video_metadata/{youtube_video_id}", response_model=VideoMetadata)
 def get_video_metadata(youtube_video_id: str):
     """
@@ -33,7 +53,7 @@ def get_video_metadata(youtube_video_id: str):
         # Fetch video metadata
         oembed_response = requests.get(oembed_url)
         if oembed_response.status_code != 200:
-            raise ValueError("Video not found or unable to fetch metadata.")
+            raise HTTPException(status_code=404, detail="Video not found or unable to fetch metadata.")
 
         oembed_data = oembed_response.json()
         title = oembed_data.get("title", "No Title Available")
@@ -56,30 +76,21 @@ def get_video_metadata(youtube_video_id: str):
         except CouldNotRetrieveTranscript:
             available_transcripts = []
         except Exception as e:
-            raise ValueError(f"Error fetching transcripts: {e}")
+            raise HTTPException(status_code=500, detail=f"Error fetching transcripts: {e}")
 
         return VideoMetadata(
             title=title,
             thumbnail_url=thumbnail_url,
             supported_languages=available_transcripts
         )
-    except ValueError as ve:
-        # Return VideoMetadata with an error message by leveraging the response model
-        return VideoMetadata(
-            title="",
-            thumbnail_url="",
-            supported_languages=[],
-            # Note: The response model does not include an error field.
-            # To handle errors, consider creating a separate response model or adjusting the current one.
-        )
+    except HTTPException as he:
+        raise he
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching video metadata: {e}")
+    except ValueError:
+        raise HTTPException(status_code=500, detail="Invalid response from oEmbed endpoint.")
     except Exception as e:
-        # For unexpected errors, you might want to log them and return a generic error message.
-        return VideoMetadata(
-            title="",
-            thumbnail_url="",
-            supported_languages=[],
-            # Similarly, handle errors appropriately based on your application's needs.
-        )
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
 
 @app.get("/video_transcripts/{youtube_video_id}", response_model=VideoTranscriptResponse)
 def get_transcript(youtube_video_id: str, language: Optional[str] = "en"):
@@ -112,10 +123,13 @@ def get_transcript(youtube_video_id: str, language: Optional[str] = "en"):
 def video_summary(
     youtube_video_id: str,
     language: Optional[str] = "en",
+    model: Optional[str] = None,
+    prompt: Optional[str] = None,
     ollama_api_url: Optional[str] = Header(None, alias="X-Ollama-API-URL")
 ):
     """
     Generates a summary of the YouTube video transcript using Ollama.
+    Accepts optional 'model' and 'prompt' query parameters.
     """
     if not ollama_api_url:
         # Default to internal Docker network URL if not provided
@@ -144,9 +158,19 @@ def video_summary(
     if not concatenated_transcript:
         return VideoSummaryResponse(error="No transcript available to generate summary.")
 
-    # Generate the summary using Ollama's library
-    try:
-        # Define the prompt as per your requirements
+    # If model is not specified, fetch the first available model
+    if not model:
+        try:
+            models = [item.get('model') for item in ollama.list().get('models','')]
+            if not models:
+                raise HTTPException(status_code=500, detail="No models available in Ollama.")
+            if not model in models:
+                model = models[0]
+        except Exception as e:
+            return VideoSummaryResponse(error=f"Error fetching available models: {e}")
+
+    # If prompt is not provided, use a default prompt
+    if not prompt:
         prompt = (
             f"Please provide a summary for the following YouTube video transcript:\n\n{concatenated_transcript}\n\n"
             "The summary should be structured as follows:\n"
@@ -154,16 +178,20 @@ def video_summary(
             "2. A list of the main insights or takeaways presented in the video.\n"
             "3. An overall sentiment rating of the video's tone towards the main topic, expressed as Positive, Neutral, or Negative.\n"
             f"4. The summary shall be in this language as identified by its short-code: {language}.\n"
-            #f"6. Format your answer in Markdown Syntax.\n"
         )
+    else:
+        prompt = prompt.replace("[[concatenated_transcript]]",concatenated_transcript).replace("[language]",language)
 
+    # Generate the summary using Ollama's library
+    try:
         # Generate the summary
         summary_response = ollama.generate(
-            model="llama3.2:3b",  # Replace with your desired model
+            model=model,  # Use the selected model
             prompt=prompt
         )
 
         # Extract the summary from the response
+        # Adjust the key based on Ollama's actual response structure
         summary = summary_response.get('response', 'No summary available').strip()
 
     except Exception as e:
@@ -176,7 +204,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://youtube_frontend:8050", "http://localhost:8050"],  # Adjust as needed
+    allow_origins=["http://localhost:8050"],  # Adjust as needed
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
